@@ -1,58 +1,24 @@
 #include <FastLED.h>
 
 // FastLED setup
-#define NUM_LEDS 6
-#define DATA_PIN 3
-#define COLOR_CODE RGB
-#define CHIPSET WS2812
+#define COLOR_CODE GRB  // The order of colors (if using hex for ex.)
+#define CHIPSET WS2812  // The LEDS in this strip are WS2812
+
+const int numLeds = _;  // The number of LEDS on the strip
+const int dataPin = _;  // The pin the LED strip is connected to
 
 // LEDs' data
-CRGB leds[NUM_LEDS];
-int brightness = 0;
-const int brightnessIncrement = 20;
+CRGB leds[numLeds];     // Initialize an array of the led colors to 0x000000 (black)
+int brightness = 0;     // Start the LED off (0-255)
+const int brightnessIncrement = 20; // Increments of the brightness increase
 
 void setup() {
-    FastLED.addLeds<CHIPSET, DATA_PIN, COLOR_CODE>(leds, NUM_LEDS);
-    FastLED.setBrightness(brightness);
+    FastLED.addLeds<CHIPSET, dataPin, COLOR_CODE>(leds, numLeds);   // Initialize the LED strip
+    FastLED.setBrightness(brightness);  // Set the initial brightness of the strip
+    leds[0] = CRGB::Green;  // Makes the first LED green (Ignore for now)
 }
 
 void loop() {
-    // increase constantly jumping to low from max
-    brightness = (brightness + brightnessIncrement) % 255;
-
-    // increase and decrease
-    // for (int i = 0; i < ceil(255/brightness); i++) {
-    //     brightness = constrain(brightness + brightnessIncrement, 0, 255);
-    // }
-    // for (int i = 0; i < ceil(255/brightness); i++) {
-    //     brightness = constrain(brightness - brightnessIncrement, 0, 255);)
-    // }
-
-    // random
-    // **NOTE: seed the random generator with an unused analog pin in setup
-    // brightness = random(256); // min is 0 by default, max (256) is exclusive
+    brightness = _____; // increase constantly jumping to low from max
+    // TODO: Update brightness with FastLED
 }
-
-/* 
-#include <FastLED.h>
-
-// FastLED setup
-#define NUM_LEDS 6;
-#define DATA_PIN 3;
-#define COLOR_CODE RGB
-#define CHIPSET WS2812
-
-// LEDs' data
-CRGB leds[NUM_LEDS];
-int brightness = 42;
-const int brightnessIncrement = 20;
-
-void setup() {
-    FastLED.addLeds<CHIPSET, DATA_PIN, COLOR_CODE>(leds, NUM_LEDS);
-    FastLED.setBrightness(brightness);
-}
-
-void loop() {
-    brightness = (brightness + brightnessIncrement) % 255;
-}
- */

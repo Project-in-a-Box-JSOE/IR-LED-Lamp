@@ -2,13 +2,12 @@
 #include <TimerOne.h>
 
 // FastLED setup
-#define COLOR_CODE GRB  // The order of colors (if using hex for ex.)
-#define CHIPSET WS2812  // The LEDS in this strip are WS2812
+#define COLOR_CODE RGB
+#define CHIPSET WS2812
+
+const int numLEDs = 6;
+const int dataPin = 3;
 #define MIC_PIN A0                  // Analog port for microphone
-
-const int numLeds = _;  // The number of LEDS on the strip
-const int dataPin = _;  // The pin the LED strip is connected to
-
 uint8_t squelch = 1;                // Anything below this is background noise. Use a higher value with a physical microphone.
 int sample;                         // Current sample.
 float sampleAvg = 0;                // Smoothed Average.
@@ -27,7 +26,7 @@ const int greenInitial      = 204;
 const int blueInitial       = 190;
 const int colorIncrement    = 2;
 const CRGB palette[numLEDs] = {
-  {255, 25, 60}, {255, 42, 9}, {21, 20, 255},
+  {255, 25, 60}, {.r = 255, .g = 42, .b = 9}, {21, 20, 255},
   {10, 255, 0}, {60, 35, 255}, {0, 0, 0}
 };
 /* const CRGB palette[numLEDs] = {
@@ -53,8 +52,9 @@ void loop() {
   // chasingLED();
   // colorPaletteRotate();
 
-  // one of these getMagnitudeX functions must be used with all magnitude related functions
+  // one of these three getMagnitudeX functions must be used with all magnitude related functions
   // getMagnitudeFixed();
+  getMagnitudeFixed2();
   // getMagnitudeAPC();
 
   // magnitudeBrightness();
@@ -63,37 +63,98 @@ void loop() {
 
 // SINGLE LED COLOR
 void singleLEDColorSetup() {
+  leds[0].r = redInitial;
+  leds[0].g = greenInitial;
+  leds[0].b = blueInitial;
 }
 
 void singleLEDColor() {
+  // single LED cycle through
+  leds[0].r = (leds[0].r + colorIncrement) % 255;
+  leds[0].g = (leds[0].g + colorIncrement) % 255;
+  leds[0].b = (leds[0].b + colorIncrement) % 255;
+  FastLED.show();
+  delay(10);
 }
 
 // ALL LED SAME COLOR
 void oneColorSetup() {
+  for (int i = 0; i < numLEDs; i++) {
+    leds[i] = initialColor;
+  }
 }
 
 // Chasing LED
+
 void chasingLEDSetup() {
+  const int colorOffset = 42;
+  for (int i = 0; i < numLEDs; i++) {
+    leds[i].r = constrain(redInitial - colorOffset * i, 0, 255);
+    leds[i].g = constrain(greenInitial - colorOffset * i, 0, 255);
+    leds[i].b = constrain(blueInitial - colorOffset * i, 0, 255);
+  }
 }
 
 void chasingLED() {
+  rotate();
+  FastLED.show();
+  delay(20);
 }
 
 void rotate() {
+  // naive but general approach - set each LED to the value of the previous
+  // for chasingLED specific, given the offset, can just take the absolute
+  // value of the current value minus (255 - colorOffset) to achieve the
+  // same affect
+  // forwards
+  // Serial.println("rotate");
+  // delay(10);
+  CRGB firstLED = leds[0];
+  for (int i = 0; i < numLEDs - 1; i++) {
+    leds[i] = leds[i + 1];
+  }
+  leds[numLEDs - 1] = firstLED;
+  // backwards
+  /*CRGB lastLED = leds[numLEDs-1];
+    for (int i = numLEDs - 1; i > 0; i--) {
+      leds[i] = leds[i-1];
+    }
+    leds[0] = lastLED;*/
 }
 
 // COLOR PALETTE
+
 void colorPaletteSetup() {
+  for (int i = 0; i < numLEDs; i++) {
+    leds[i] = palette[i];
+  }
 }
 
 void colorPaletteRotate() {
+  rotate();
+  FastLED.show();
+  delay(10);
 }
 
 // MAGNITUDE
+
 void chasingInterruptSetup(unsigned long microseconds) {
+  Timer1.initialize(microseconds);
+  Timer1.attachInterrupt(chasingLED);
+  delay(100);
 }
 
 void getMagnitudeFixed() {
+  magnitude = map(analogRead(MIC_PIN), 0, 1023, 0, 255);
+  // Serial.println(magnitude);
+}
+
+void getMagnitudeFixed2() {
+  const int noiseLevel = 512;
+  const int micIn = analogRead(MIC_PIN) - noiseLevel;
+  magnitude = constrain(map(abs(micIn), 0, 512, 0, 255)*8 + 255/numLEDs, 0, 255);
+  // Serial.print("magnitude: ");Serial.print(magnitude);
+
 }
 
 void getMagnitudeAPC() {
@@ -102,14 +163,20 @@ void getMagnitudeAPC() {
 }
 
 void magnitudeBrightness() {
-  FastLED.setBrightness(map(magnitude, 0, 255, ___, ___));
+  FastLED.setBrightness(map(magnitude, 0, 255, 60, 255));
   FastLED.show();
   delay(20);
 }
 
 void magnitudeLEDsSingle() {
   byte numLEDS = map(magnitude, 0, 255, 0, numLEDs);
-  // TODO
+  // Serial.print("\tnumLEDS: ");Serial.println(numLEDS);
+  for (int i = 0; i < numLEDS; i++) {
+    leds[i] = initialColor;
+  }
+  for (int i = numLEDS; i < numLEDs; i++) {
+    leds[i] = CRGB::Black;
+  }
   FastLED.show();
   delay(20);
 }
@@ -126,11 +193,17 @@ void getSample() {
 
   sample = (micIn <= squelch) ? 0 : (sample + micIn) / 2;     // Let's filter out the background noise with a ternary operator and more exponential smoothing.
   sampleAvg = ((sampleAvg * 31) + sample) / 32;               // Smooth it out over the last 32 samples. This is a non AGC average.
-}
+  // Serial.print("micIn: "); Serial.print(micIn);
+  // Serial.print("\tsample: "); Serial.print(sample);
+  // Serial.print("\tsampleAvg: "); Serial.print(sampleAvg);
+} // getSample()
 
 void agcAvg() {                                                   // A simple averaging multiplier to automatically adjust sound sensitivity.
   multAgc = (sampleAvg < 1) ? targetAgc : targetAgc / sampleAvg;  // Make the multiplier so that sampleAvg * multiplier = setpoint
   sampleAgc = sample * multAgc;
   if (sampleAgc > 255) sampleAgc = 255;
   magnitude = sampleAgc;
-}
+  // Serial.print("\tmultAgc: "); Serial.print(multAgc);
+  // Serial.print("\tsampleAgc: "); Serial.println(sampleAgc);
+  // delay(20);
+} // agcAvg()

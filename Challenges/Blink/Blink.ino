@@ -1,12 +1,12 @@
-const int ledPin = 3;
+const int ledPin = _;           // the pin number the led is connected to
 
 void setup() {
-    pinMode(ledPin, OUTPUT);
+    pinMode(ledPin, ______);    // Configure the ledPin as an OUTPUT
 }
 
 void loop() {
-    digitalWrite(ledPin, HIGH);
-    delay(1000);
-    digitalWrite(ledPin, LOW);
-    delay(1000);
+    digitalWrite(______, ____); // turn the led on (HIGH)
+    delay(1000);                // pause the code the a 1000 ms
+    digitalWrite(ledPin, LOW);  // turn the led off (LOW)
+    delay(____);                // pause the code for a second (1000 ms)
 }
