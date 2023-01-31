@@ -1,5 +1,5 @@
-#include <IRremote.h>
 #include <FastLED.h>
+#include <IRremote.h>
 
 // IR remote hex codes
 const unsigned long buttonOne       = 0xFFA25D;
@@ -25,57 +25,35 @@ const unsigned long buttonDown      = 0xFF4AB5;
 #define COLOR_CODE  RGB     // color order for the hex code
 #define NUM_LEDS    6       // number of LEDs in strip
 #define DATA_PIN    3       // port the data pin of LED strip is connected to
-CRGB leds[NUM_LEDS];        // array storing the color information for each LED in the strip
+CRGB leds[NUM_LEDS];        // array storing the color information for each LED in thestrip
 
 // IR remote properties
-const int recvPin = 2;  // Data pin the IR receiver is connected to
-IRrecv irrecv(recvPin); // Initialize IR receiver
-decode_results results; // Initialize IR Library
+const int recvPin = 2;   // Data pin the IR receiver is connected to
+IRrecv irrecv(recvPin);  // Initialize IR receiver
+decode_results results;  // Initialize IR Library
 
 // color things
-const int initialColor  = CRGB::Purple;
-byte brightness         = 20;
-byte currentMode        = 0;
-byte numModes;  // Will be given a value in setup()
-
-// This struct represents each mode
-// with a setup function and the main function that would be called on loop
-struct mode {
-  void (*modeSetup)();
-  void (*modeFunction)();
-};
-
-// Declare functions here so that you can call on them before they are defined
-void clearStrip();
-void rotate();
-void singleLEDSetup();
-void chasingLEDSetup();
-void colorPaletteSetup();
-void breathe();
-
-mode modes[] = {
-  {.modeSetup=chasingLEDSetup, .modeFunction=rotate},
-  {colorPaletteSetup, breathe}
-};
-
-void (*currentFunction) () = rotate;
+CRGB initialColor             = (CRGB) CRGB::Purple;
+byte brightness               = 40;
+const int brightnessIncrement = 20;
 
 void setup() {
-  Serial.begin(9600);                       // Initialize the Serial port
-  FastLED.addLeds<CHIPSET, DATA_PIN, COLOR_CODE>(leds, NUM_LEDS); // Set up FastLED
-  irrecv.enableIRIn();                      // Start the receiver
-  numModes = sizeof(modes) / sizeof(mode);  // Find the number of modes
-  delay(200);                               // Add delay to make sure things are setup
+  FastLED.addLeds<CHIPSET, DATA_PIN, COLOR_CODE>(leds, NUM_LEDS);
+  FastLED.setBrightness(brightness);  // Set the initial brightness to 60/255
+  Serial.begin(9600);
 }
 
 void loop() {
+  remoteButtonPress();
+}
+
+bool remoteButtonPress() {
+  bool returnValue = true;
+
   if (irrecv.decode(&results)) {
-    clearStrip(); // Just clear the strip before making changes to avoid confusing behavior
     switch (results.value) {
       case buttonOne:
-        // Breathing lights using the color palette setup
-        colorPaletteSetup();
-        currentFunction = breathe;
+        cycleColors();
         break;
       case buttonTwo:
         // Add mode here
@@ -102,7 +80,7 @@ void loop() {
         // Add mode here
         break;
       case buttonAsterisk:
-        // Add mode here (maybe control power?)
+        turnOff();
         break;
       case buttonZero:
         // Add mode here
@@ -111,62 +89,69 @@ void loop() {
         // Add mode here
         break;
       case buttonUp:
-        // Add mode here (maybe control brightness?)
+        changeBrightness(brightnessIncrement);
+        returnValue = false;
         break;
       case buttonLeft:
-        currentMode = (currentMode == 0) ? numModes - 1 : currentMode - 1;
-        modes[currentMode].modeSetup();
-        currentFunction = modes[currentMode].modeFunction;
+        // Add mode here
         break;
       case buttonOk:
         // Add mode here
         break;
       case buttonRight:
-        currentMode = (currentMode + 1) % numModes;
-        modes[currentMode].modeSetup();
-        currentFunction = modes[currentMode].modeFunction;
+        // Add mode here
         break;
       case buttonDown:
-        // Add mode here (maybe control brightness?)
+        changeBrightness(-brightnessIncrement);
+        returnValue = false;
+        break;
+      default:
+        Serial.print("UNKNOWN CODE: ");
+        Serial.println(results.value);
+        returnValue = false;
         break;
     }
-
-    irrecv.resume();  // Re-enable the IR receiver
   }
-
-  currentFunction();  // Call on the current mode function
+  return returnValue;
 }
 
-void clearStrip() {
-  // Reset color and brightness of the LED strip
-  brightness = 42;
-  FastLED.setBrightness(brightness);
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[0] = CRGB::Black;
+void cycleColors() {
+  int red                 = initialColor.r;
+  int green               = initialColor.g;
+  int blue                = initialColor.b;
+  int brightnessIncrement = 25;
+
+  while (true) {
+    red   = (red + brightnessIncrement) % 256;
+    green = (green + brightnessIncrement) % 256;
+    blue  = (blue + brightnessIncrement) % 256;
+
+    setAllColors(red, green, blue);
+
+    FastLED.show();       // Send changes to the LED strip
+    remoteButtonPress();  // Change modes on remote button press
   }
+}
+
+// Update all leds to the same color
+void setAllColors(byte red, byte green, byte blue) {
+  for (int i = 0; i < NUM_LEDS; i++) {
+    setColor(i, red, green, blue);
+  }
+}
+
+// Update the colors at the specified index with the new color
+void setColor(int index, byte red, byte green, byte blue) {
+  leds[index] = (CRGB){.r = red, .g = green, .b = blue};
+}
+
+void turnOff() {
+  FastLED.setBrightness(0);
   FastLED.show();
 }
 
-void rotate() {
-  // Copy your rotate code here
-  Serial.println("rotate");
-}
-
-void singleLEDSetup() {
-  // Copy your singleLEDSetup code here
-  Serial.println("single LED setup");
-}
-
-void chasingLEDSetup() {
-  // Copy your chasingLEDSetup code here
-  Serial.println("chasingLEDSetup");
-}
-
-void colorPaletteSetup() {
-  // Copy your colorPaletteSetup code here
-  Serial.println("colorPaletteSetup");
-}
-
-void breathe() {
-  Serial.println("breathe");
+void changeBrightness(int brightnessChange) {
+  brightness = constrain(brightness + brightnessChange, 0, 255);
+  FastLED.setBrightness(brightness);
+  FastLED.show();
 }
