@@ -46,21 +46,21 @@ void singleLEDColorSetup() {
 }
 
 void singleLEDColor() {
-    // cycle through colors of the first LED
-    // TODO
+    // TODO: cycle through colors of the first LED
     FastLED.show();
     delay(10);
 }
 
 // Chasing LED
 void chasingLEDSetup() {
-    
+    // TODO
 }
 
 void rotate() {
-    
+    // TODO
 }
 
 // COLOR PALETTE
 void colorPaletteSetup() {
+    // TODO
 }

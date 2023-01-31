@@ -36,4 +36,5 @@ void loop() {
     // **NOTE: seed the random generator with an unused analog pin in setup
     // brightness = random(256); // min is 0 by default, max (256) is exclusive
     // FastLED.setBrightness(brightness);
+    FastLED.show();
 }

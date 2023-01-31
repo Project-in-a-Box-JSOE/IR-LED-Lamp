@@ -15,7 +15,7 @@ const int greenInitial      = 204;
 const int blueInitial       = 190;
 const int colorIncrement    = 2;
 const CRGB palette[numLEDs]= {
-    {120, 25, 90}, {.r = 144, .g = 42, .b = 9}, {21, 20, 95},
+    {.r = 144, .g = 42, .b = 9}, {120, 25, 90}, {21, 20, 95},
     {10, 190, 72}, {100, 35, 90}
 };
 
