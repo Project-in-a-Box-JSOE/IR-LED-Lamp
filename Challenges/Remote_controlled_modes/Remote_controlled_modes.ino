@@ -19,6 +19,8 @@ const unsigned long buttonLeft      = 0xFF10EF;
 const unsigned long buttonOk        = 0xFF38C7;
 const unsigned long buttonRight     = 0xFF5AA5;
 const unsigned long buttonDown      = 0xFF4AB5;
+const unsigned long repeat          = -1;
+const int decodeType                = 3; // NEC
 
 // FastLED properties
 #define CHIPSET     WS2812  // CHIPSET of the LEDs
@@ -28,35 +30,40 @@ const unsigned long buttonDown      = 0xFF4AB5;
 CRGB leds[NUM_LEDS];        // array storing the color information for each LED in thestrip
 
 // IR remote properties
-const int recvPin = 2;   // Data pin the IR receiver is connected to
+const int recvPin = 2;   // Data\ pin the IR receiver is connected to
 IRrecv irrecv(recvPin);  // Initialize IR receiver
 decode_results results;  // Initialize IR Library
 
 // color things
 CRGB initialColor             = (CRGB) CRGB::Purple;
-byte brightness               = 40;
+int brightness                = 40;
 const int brightnessIncrement = 20;
 
 void setup() {
   FastLED.addLeds<CHIPSET, DATA_PIN, COLOR_CODE>(leds, NUM_LEDS);
   FastLED.setBrightness(brightness);  // Set the initial brightness to 60/255
+  FastLED.show();
   Serial.begin(9600);
+  irrecv.enableIRIn();
+  pinMode(recvPin, INPUT);
 }
 
 void loop() {
-  remoteButtonPress();
-}
-
-bool remoteButtonPress() {
-  bool returnValue = true;
-
+  
   if (irrecv.decode(&results)) {
+    if (results.decode_type != decodeType) {
+      irrecv.resume();
+      return;
+    }
     switch (results.value) {
       case buttonOne:
-        cycleColors();
+        cycleColors(buttonOne);
         break;
       case buttonTwo:
         // Add mode here
+        setAllColors(CRGB::Purple);
+        while (!irrecv.isIdle()){}
+        FastLED.show();
         break;
       case buttonThree:
         // Add mode here
@@ -90,7 +97,6 @@ bool remoteButtonPress() {
         break;
       case buttonUp:
         changeBrightness(brightnessIncrement);
-        returnValue = false;
         break;
       case buttonLeft:
         // Add mode here
@@ -103,55 +109,83 @@ bool remoteButtonPress() {
         break;
       case buttonDown:
         changeBrightness(-brightnessIncrement);
-        returnValue = false;
         break;
       default:
-        Serial.print("UNKNOWN CODE: ");
-        Serial.println(results.value);
-        returnValue = false;
         break;
     }
+    irrecv.resume();
+  }
+//  remoteButtonPress();
+}
+
+bool remoteButtonPress(unsigned long currentCase) {
+  bool returnValue = false;
+  
+  if (irrecv.decode(&results)) {
+    Serial.println(results.value, HEX);
+    if (results.decode_type == decodeType) {
+      returnValue = true;
+      if (results.value == buttonUp) {
+        changeBrightness(brightnessIncrement);
+        returnValue = false;
+      }
+      else if (results.value == buttonDown) {
+        changeBrightness(-brightnessIncrement);
+        returnValue = false;
+      }
+      else if (results.value == repeat || results.value == currentCase) {
+        returnValue = false;
+      }
+    }
+    
+    irrecv.resume();
   }
   return returnValue;
 }
 
-void cycleColors() {
+void cycleColors(unsigned long theCase) {
   int red                 = initialColor.r;
   int green               = initialColor.g;
   int blue                = initialColor.b;
-  int brightnessIncrement = 25;
+  int colorIncrement      = 1;
 
   while (true) {
-    red   = (red + brightnessIncrement) % 256;
-    green = (green + brightnessIncrement) % 256;
-    blue  = (blue + brightnessIncrement) % 256;
+    red   = (red + colorIncrement) % 256;
+    green = (green + colorIncrement) % 256;
+    blue  = (blue + colorIncrement) % 256;
 
-    setAllColors(red, green, blue);
+    setAllColors((CRGB) {red, green, blue});
 
-    FastLED.show();       // Send changes to the LED strip
-    remoteButtonPress();  // Change modes on remote button press
+    while (!irrecv.isIdle()){}
+    FastLED.show(); // Send changes to the LED strip
+    if(remoteButtonPress(theCase)) return;  // Change modes on remote button press
   }
 }
 
 // Update all leds to the same color
-void setAllColors(byte red, byte green, byte blue) {
+void setAllColors(CRGB color) {
   for (int i = 0; i < NUM_LEDS; i++) {
-    setColor(i, red, green, blue);
+    setColor(i, color);
   }
 }
 
 // Update the colors at the specified index with the new color
-void setColor(int index, byte red, byte green, byte blue) {
-  leds[index] = (CRGB){.r = red, .g = green, .b = blue};
+void setColor(int index, CRGB color) {
+  leds[index] = color;
 }
 
 void turnOff() {
-  FastLED.setBrightness(0);
+  brightness = 0;
+  while (!irrecv.isIdle()){}
+  FastLED.setBrightness(brightness);
+  while (!irrecv.isIdle()){}
   FastLED.show();
 }
 
 void changeBrightness(int brightnessChange) {
   brightness = constrain(brightness + brightnessChange, 0, 255);
+  while (!irrecv.isIdle()){}
   FastLED.setBrightness(brightness);
+  while (!irrecv.isIdle()){}  
   FastLED.show();
 }
