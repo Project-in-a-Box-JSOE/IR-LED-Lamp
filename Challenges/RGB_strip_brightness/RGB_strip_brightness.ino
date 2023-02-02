@@ -1,11 +1,11 @@
 #include <FastLED.h>
 
 // FastLED setup
-#define COLOR_CODE RGB  // The order of colors (if using hex for ex.)
+#define COLOR_CODE GRB  // The order of colors (if using hex for ex.)
 #define CHIPSET WS2812  // The LEDS in this strip are WS2812
 
-const int numLeds = _;  // The number of LEDS on the strip
-const int dataPin = _;  // The pin the LED strip is connected to
+const int numLeds = 6;  // The number of LEDS on the strip
+const int dataPin = 3;  // The pin the LED strip is connected to
 
 // LEDs' data
 CRGB leds[numLeds];     // Initialize an array of the led colors to 0x000000 (black)

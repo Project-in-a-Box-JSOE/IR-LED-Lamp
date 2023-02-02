@@ -24,7 +24,7 @@ const int decodeType                = 3; // NEC
 
 // FastLED properties
 #define CHIPSET     WS2812  // CHIPSET of the LEDs
-#define COLOR_CODE  RGB     // color order for the hex code
+#define COLOR_CODE  GRB     // color order for the hex code
 #define NUM_LEDS    6       // number of LEDs in strip
 #define DATA_PIN    3       // port the data pin of LED strip is connected to
 CRGB leds[NUM_LEDS];        // array storing the color information for each LED in thestrip
