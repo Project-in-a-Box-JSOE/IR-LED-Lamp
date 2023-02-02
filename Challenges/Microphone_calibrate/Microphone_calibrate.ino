@@ -1,10 +1,10 @@
 const int microphonePin     = A4;
-const int numberOfReadings  = 3200;
+const int numberOfReadings  = 128;
 int currentReadingIndex     = 0;
 int microphoneReadings[numberOfReadings];
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(38400);
   pinMode(microphonePin);
 }
 
@@ -13,7 +13,7 @@ void loop() {
   Serial.print("Average over ");
   Serial.print(numberOfReadings);
   Serial.print(" readings: ");
-  Serial.println(calculateAverage);
+  Serial.println(calculateAverage());
 }
 
 void readMic() {
