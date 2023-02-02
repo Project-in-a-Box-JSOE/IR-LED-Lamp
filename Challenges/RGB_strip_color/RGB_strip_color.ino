@@ -9,7 +9,7 @@ const int dataPin = 3;  // The pin the LED strip is connected to
 
 // LEDs' data
 CRGB leds[numLEDs];
-const int brightness        = __; // Set to a nonzero positive value (0 < brightness < 256)
+const int brightness        = 40; // Set to a nonzero positive value (0 < brightness < 256)
 const int redInitial        = __; // Initial amount of red light
 const int greenInitial      = __; // Initial amount of green light
 const int blueInitial       = __; // Initial amount of blue light
@@ -73,10 +73,10 @@ void singleLEDColorSetup() {
 
 void singleLEDColor() {
   // TODO: cycle through colors of the first LED
+  // I recommend that you increment each color in different amounts
   leds[0].r = __;
   leds[0].g = __;
   leds[0].b = __;
-  FastLED.show();
 }
 
 // Chasing LED
