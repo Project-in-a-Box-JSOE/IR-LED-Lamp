@@ -4,26 +4,26 @@ int currentReadingIndex     = 0;
 int microphoneReadings[numberOfReadings];
 
 void setup() {
-  Serial.begin(38400);
-  pinMode(microphonePin);
+  Serial.begin(19200);
+  pinMode(microphonePin, INPUT);
 }
 
 void loop() {
   readMic();
-  Serial.print("Average over ");
+  Serial.print("Average_over_");
   Serial.print(numberOfReadings);
-  Serial.print(" readings: ");
-  Serial.println(calculateAverage());
+  Serial.print("_readings:");
+  Serial.print(calculateAverage());
+  Serial.println("\t0:0\t1023:1023");
 }
 
 void readMic() {
-  for (int i = 0; i < numberOfReadings; i++) {
-    microphoneReadings[i] = analogRead(microphonePin);
-  }
+  microphoneReadings[currentReadingIndex] = analogRead(microphonePin);
+  currentReadingIndex = (currentReadingIndex + 1) % numberOfReadings;
 }
 
 double calculateAverage() {
-  unsigned int sum = 0;
+  unsigned long sum = 0;
   for (int i = 0; i < numberOfReadings; i++) {
     sum += microphoneReadings[i];
   }
