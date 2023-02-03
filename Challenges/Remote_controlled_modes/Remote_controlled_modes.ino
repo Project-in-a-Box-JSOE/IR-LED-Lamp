@@ -37,129 +37,145 @@ decode_results results;  // Initialize IR Library
 // color things
 CRGB initialColor             = (CRGB) CRGB::Purple;
 int brightness                = 40;
-const int brightnessIncrement = 20;
+const int brightnessIncrement = 20; // change in brightness for up/down button presses
+
+int colorIncrement = 1;
 
 void setup() {
   FastLED.addLeds<CHIPSET, DATA_PIN, COLOR_CODE>(leds, NUM_LEDS);
   FastLED.setBrightness(brightness);  // Set the initial brightness to 60/255
   FastLED.show();
-  Serial.begin(9600);
+  Serial.begin(38400);
   irrecv.enableIRIn();
   pinMode(recvPin, INPUT);
 }
 
+enum Mode{nothing, flashingLights, allPurple, rotateLED, singleLED};
+Mode curMode = nothing, newMode = nothing;
+
 void loop() {
-  
+  // Change modes if the IR receiver sees a protocol matching decodable signal
   if (irrecv.decode(&results)) {
     if (results.decode_type != decodeType) {
-      irrecv.resume();
+      irrecv.resume();  // enable the ir receiver to continue decoding
       return;
     }
-    switch (results.value) {
-      case buttonOne:
-        cycleColors(buttonOne);
-        break;
-      case buttonTwo:
-        // Add mode here
-        setAllColors(CRGB::Purple);
-        while (!irrecv.isIdle()){}
-        FastLED.show();
-        break;
-      case buttonThree:
-        // Add mode here
-        break;
-      case buttonFour:
-        // Add mode here
-        break;
-      case buttonFive:
-        // Add mode here
-        break;
-      case buttonSix:
-        // Add mode here
-        break;
-      case buttonSeven:
-        // Add mode here
-        break;
-      case buttonEight:
-        // Add mode here
-        break;
-      case buttonNine:
-        // Add mode here
-        break;
-      case buttonAsterisk:
-        turnOff();
-        break;
-      case buttonZero:
-        // Add mode here
-        break;
-      case buttonHashtag:
-        // Add mode here
-        break;
-      case buttonUp:
-        changeBrightness(brightnessIncrement);
-        break;
-      case buttonLeft:
-        // Add mode here
-        break;
-      case buttonOk:
-        // Add mode here
-        break;
-      case buttonRight:
-        // Add mode here
-        break;
-      case buttonDown:
-        changeBrightness(-brightnessIncrement);
-        break;
-      default:
-        break;
-    }
-    irrecv.resume();
+
+    // readRemote reads input from the remote and changes the LED color mode
+    // or variables like brightness; returns the new mode
+    newMode = readRemote();
+
+    irrecv.resume(); // enable the ir receiver to continue decoding
   }
-//  remoteButtonPress();
+
+  // runMode sets the colors of the LEDs based on the current LED color mode
+  runMode(newMode != curMode);
+  curMode = newMode;
 }
 
-bool remoteButtonPress(unsigned long currentCase) {
-  bool returnValue = false;
+int readRemote() {
+  Mode newMode = curMode;
+  switch (results.value) {
+    case buttonOne:
+      newMode = flashingLights;
+      break;
+    case buttonTwo:
+      newMode = allPurple;
+      break;
+    case buttonThree:
+      newMode = rotateLED;
+      break;
+    case buttonFour:
+      newMode = singleLED;
+      break;
+    case buttonFive:
+      // Add mode here
+      break;
+    case buttonSix:
+      // Add mode here
+      break;
+    case buttonSeven:
+      // Add mode here
+      break;
+    case buttonEight:
+      // Add mode here
+      break;
+    case buttonNine:
+      // Add mode here
+      break;
+    case buttonAsterisk:
+      turnOff();
+      break;
+    case buttonZero:
+      // Add mode here
+      break;
+    case buttonHashtag:
+      // Add mode here
+      break;
+    case buttonUp:
+      changeBrightness(brightnessIncrement);
+      break;
+    case buttonLeft:
+      // Add mode here
+      break;
+    case buttonOk:
+      // Add mode here
+      break;
+    case buttonRight:
+      // Add mode here
+      break;
+    case buttonDown:
+      changeBrightness(-brightnessIncrement);
+      break;
+    default:
+      break;
+  }
+  return newMode;
+}
+
+// initialize is true if it's the first iteration in this mode
+// in other words, when newMode isn't equal to curMode
+void runMode(bool initialize){
   
-  if (irrecv.decode(&results)) {
-    Serial.println(results.value, HEX);
-    if (results.decode_type == decodeType) {
-      returnValue = true;
-      if (results.value == buttonUp) {
-        changeBrightness(brightnessIncrement);
-        returnValue = false;
-      }
-      else if (results.value == buttonDown) {
-        changeBrightness(-brightnessIncrement);
-        returnValue = false;
-      }
-      else if (results.value == repeat || results.value == currentCase) {
-        returnValue = false;
-      }
-    }
-    
-    irrecv.resume();
+  switch (curMode) {
+    case flashingLights:
+      cycleColors(initialize);
+      break;
+    case allPurple:
+      setAllColors(CRGB::Purple);
+      break;
+     case rotateLED:
+      rotate(initialize);
+      break;
+     case singleLED:
+      singleLEDColor();
+      break;
+     default:
+      setAllColors((CRGB){0,0,0});
+      break;
   }
-  return returnValue;
+  
+  while (!irrecv.isIdle()){}  // Necessary before each FastLED function call
+                              // due to incompatibility of IRremote and FastLED
+                              // libraries
+  FastLED.show();
 }
 
-void cycleColors(unsigned long theCase) {
-  int red                 = initialColor.r;
-  int green               = initialColor.g;
-  int blue                = initialColor.b;
-  int colorIncrement      = 1;
 
-  while (true) {
-    red   = (red + colorIncrement) % 256;
-    green = (green + colorIncrement) % 256;
-    blue  = (blue + colorIncrement) % 256;
-
-    setAllColors((CRGB) {red, green, blue});
-
-    while (!irrecv.isIdle()){}
-    FastLED.show(); // Send changes to the LED strip
-    if(remoteButtonPress(theCase)) return;  // Change modes on remote button press
+void cycleColors(bool initialize) {
+  if (initialize){
+    for (int i=0; i<NUM_LEDS; i++)
+      leds[i] = initialColor;
   }
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i].r = (leds[i].r + colorIncrement) % 256;
+    leds[i].g = (leds[i].g + colorIncrement) % 256;
+    leds[i].b = (leds[i].b + colorIncrement) % 256;
+  }
+  while (!irrecv.isIdle()){}  // Necessary before each FastLED function call
+                              // due to incompatibility of IRremote and FastLED
+                              // libraries
+  FastLED.show();
 }
 
 // Update all leds to the same color
@@ -176,18 +192,49 @@ void setColor(int index, CRGB color) {
 
 void turnOff() {
   brightness = 0;
-  while (!irrecv.isIdle()){}
+  while (!irrecv.isIdle()){}  // Necessary before each FastLED function call
+                              // due to incompatibility of IRremote and FastLED
+                              // libraries
   FastLED.setBrightness(brightness);
-  while (!irrecv.isIdle()){}
+  while (!irrecv.isIdle()){}  // Necessary before each FastLED function call
+                              // due to incompatibility of IRremote and FastLED
+                              // libraries
   FastLED.show();
 }
 
 void changeBrightness(int brightnessChange) {
   brightness = constrain(brightness + brightnessChange, 0, 255);
-  while (!irrecv.isIdle()){}
+  while (!irrecv.isIdle()){}  // Necessary before each FastLED function call
+                              // due to incompatibility of IRremote and FastLED
+                              // libraries
   FastLED.setBrightness(brightness);
-  while (!irrecv.isIdle()){}  
+  while (!irrecv.isIdle()){}  // Necessary before each FastLED function call
+                              // due to incompatibility of IRremote and FastLED
+                              // libraries
   FastLED.show();
 }
 
-// Add functions here
+void rotate(bool initialize) {
+  if (initialize){
+    CRGB palette[NUM_LEDS] = {
+      {255, 25, 60}, {255, 42, 9}, {21, 20, 255},
+      {10, 255, 0}, {60, 35, 255}, {0, 0, 0}
+    };
+    for (int i=0; i<NUM_LEDS; i++){
+      leds[i] = palette[i];
+    }
+  }
+  
+  CRGB first = leds[0];
+  for (int i=0; i+1<NUM_LEDS; i++){
+    leds[i] = leds[i+1];
+  }
+  leds[NUM_LEDS-1] = first;
+}
+
+void singleLEDColor() {
+  // TODO: cycle through colors of the first LED
+  leds[0].r = (leds[0].r + 1) % 256;
+  leds[0].g = (leds[0].g + 1) % 256;
+  leds[0].b = (leds[0].b + 1) % 256;
+}
