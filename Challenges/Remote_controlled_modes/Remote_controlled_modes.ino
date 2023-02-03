@@ -151,7 +151,7 @@ void runMode(bool initialize){
       singleLEDColor();
       break;
      default:
-      setAllColors((CRGB){0,0,0});
+      setAllColors(CRGB(0,0,0));
       break;
   }
   
