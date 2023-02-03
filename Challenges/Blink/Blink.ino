@@ -1,4 +1,4 @@
-const int ledPin = _;           // the pin number the led is connected to
+const int ledPin = 13;           // the pin number the led is connected to
 
 void setup() {
     pinMode(ledPin, ______);    // Configure the ledPin as an OUTPUT

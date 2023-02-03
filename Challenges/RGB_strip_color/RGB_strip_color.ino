@@ -13,7 +13,7 @@ const int brightness        = 40; // Set to a nonzero positive value (0 < bright
 const int redInitial        = __; // Initial amount of red light
 const int greenInitial      = __; // Initial amount of green light
 const int blueInitial       = __; // Initial amount of blue light
-const int colorIncrement    = 1;  // Dependent on delay in loop
+const int colorIncrement    = 20;  // Dependent on delay in loop
 const CRGB palette[numLEDs] = {
   {255, 25, 60}, {255, 42, 9}, {21, 20, 255},
   {10, 255, 0}, {60, 35, 255}, {0, 0, 0}
@@ -60,7 +60,7 @@ void loop() {
       break;
   }
   FastLED.show(); // Push the changes to the LED strip
-  delay(10);
+  delay(100);
 }
 
 // SINGLE LED COLOR

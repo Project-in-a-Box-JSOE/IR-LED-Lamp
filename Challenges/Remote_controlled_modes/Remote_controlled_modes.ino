@@ -189,3 +189,5 @@ void changeBrightness(int brightnessChange) {
   while (!irrecv.isIdle()){}  
   FastLED.show();
 }
+
+// Add functions here
